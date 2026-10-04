@@ -1,0 +1,34 @@
+name: Build QRIS Notifier APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Siapkan Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Ekstrak proyek
+        run: |
+          mkdir project
+          unzip -q *.zip -d project
+
+      - name: Build APK
+        working-directory: project
+        run: |
+          gradle :app:assembleDebug
+
+      - name: Simpan APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: QRIS-Notifier-APK
+          path: project/app/build/outputs/apk/debug/app-debug.apk
