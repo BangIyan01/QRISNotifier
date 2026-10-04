@@ -20,19 +20,35 @@ jobs:
       - name: Ekstrak proyek
         run: |
           unzip -q *.zip -d extracted
-          echo "Isi hasil ekstraksi:"
-          find extracted -maxdepth 3 -type f | head -50
-
-      - name: Cari folder proyek
-        run: |
           PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -print -quit)")
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Proyek ditemukan di: $PROJECT_DIR"
+
+      - name: Perbaiki target Java dan Kotlin
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle.kts")
+          s = p.read_text()
+          s = s.replace(
+              'buildFeatures { compose = true }',
+              '''compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+
+              buildFeatures { compose = true }'''
+          )
+          p.write_text(s)
+          PY
 
       - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          gradle :app:assembleDebug
+        run: gradle :app:assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
